@@ -23,7 +23,8 @@ defmodule Lab2.MixProject do
   defp deps do
     [
       {:eventsource_ex, "~> 0.0.2"},
-      {:jason, "~> 1.1"}
+      {:jason, "~> 1.1"},
+      {:sweet_xml, "~> 0.6.5"}
     ]
   end
 end

@@ -15,7 +15,13 @@ defmodule Lab2.Application do
       },
       %{
         id: Fetch,
-        start: {Fetch, :start_link, ["http://localhost:4000/iot"]}
+        start: {
+          Fetch, :start_link, [
+            "http://localhost:4000/legacy_sensors",
+            "http://localhost:4000/iot",
+            "http://localhost:4000/sensors"
+          ]
+        }
       },
       %{
         id: Router,

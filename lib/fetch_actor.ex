@@ -5,8 +5,10 @@ defmodule Fetch do
     {:ok, init_arg}
   end
 
-  def start_link(url) do
-    {:ok, _pid} = EventsourceEx.new(url, stream_to: self())
+  def start_link(url_legacy_sensors, url_iot, url_sensors) do
+    {:ok, _pid} = EventsourceEx.new(url_legacy_sensors, stream_to: self())
+    {:ok, _pid} = EventsourceEx.new(url_iot, stream_to: self())
+    {:ok, _pid} = EventsourceEx.new(url_sensors, stream_to: self())
     #generate pids for actors
     {:ok, router_pid} = GenServer.start_link(Router, [])
     {:ok, flow_router_pid} = GenServer.start_link(FlowRouter, [])

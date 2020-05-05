@@ -1,3 +1,4 @@
+import SweetXml
 defmodule Slave do
   use GenServer
   @registry :workers_registry
@@ -25,13 +26,14 @@ defmodule Slave do
   ## Private
   defp perform_calc(msg) do
     data = json_parse(msg)
-    data = calc_mean(data)
-    frc = forecast(data)
-    [{_id, aggregator_pid}] = :ets.lookup(:buckets_registry, "aggregator_pid")
-    [{_id, flow_aggr_pid}] = :ets.lookup(:buckets_registry, "flow_aggr_pid")
-
-    GenServer.cast(flow_aggr_pid, {:flow_aggr, [frc, data]})
-    GenServer.cast(aggregator_pid, {:aggregator, flow_aggr_pid})
+    isJson = is_map(data)
+    parsed_data = if isJson do
+      data
+    else
+      xml_parse(data)
+    end
+    data = calc_mean(parsed_data)
+    IO.inspect(data)
   end
 
   defp via_tuple(name) do
@@ -43,70 +45,91 @@ defmodule Slave do
     msg_data["message"]
   end
 
-  defp calc_mean(data) do
-    atmo_pressure_sensor_1 = data["atmo_pressure_sensor_1"]
-    atmo_pressure_sensor_2 = data["atmo_pressure_sensor_2"]
-    atmo_pressure_sensor = mean(atmo_pressure_sensor_1, atmo_pressure_sensor_2)
-    humidity_sensor_1 = data["humidity_sensor_1"]
-    humidity_sensor_2 = data["humidity_sensor_2"]
-    humidity_sensor = mean(humidity_sensor_1, humidity_sensor_2)
-    light_sensor_1 = data["light_sensor_1"]
-    light_sensor_2 = data["light_sensor_2"]
-    light_sensor = mean(light_sensor_1, light_sensor_2)
-    temperature_sensor_1 = data["temperature_sensor_1"]
-    temperature_sensor_2 = data["temperature_sensor_2"]
-    temperature_sensor = mean(temperature_sensor_1, temperature_sensor_2)
-    wind_speed_sensor_1 = data["wind_speed_sensor_1"]
-    wind_speed_sensor_2 = data["wind_speed_sensor_2"]
-    wind_speed_sensor = mean(wind_speed_sensor_1, wind_speed_sensor_2)
-    unix_timestamp_us = data["unix_timestamp_us"]
-    map = %{
-      :atmo_pressure_sensor => atmo_pressure_sensor,
-      :humidity_sensor => humidity_sensor,
-      :light_sensor => light_sensor,
-      :temperature_sensor => temperature_sensor,
-      :wind_speed_sensor => wind_speed_sensor,
-      :unix_timestamp_us => unix_timestamp_us
-    }
+  defp xml_parse(data) do
+    unix_timestamp_100us = get_xml_timestamp(data)
+    humidity_sensor_values = data |> xpath(~x"//humidity_percent/value"l, value: ~x"text()") |> Enum.map(fn %{value: value} ->
+      value
+    end)
+    temperature_sensor_values = data |> xpath(~x"//temperature_celsius/value"l, value: ~x"text()") |> Enum.map(fn %{value: value} ->
+      value
+    end)
+
+    map = %{}
+    map = Map.put(map, "humidity_sensor_1", single_quotes_to_float(List.first(humidity_sensor_values)))
+    map = Map.put(map, "humidity_sensor_2", single_quotes_to_float(List.last(humidity_sensor_values)))
+    map = Map.put(map, "temperature_sensor_1", single_quotes_to_float(List.first(temperature_sensor_values)))
+    map = Map.put(map, "temperature_sensor_2", single_quotes_to_float(List.last(temperature_sensor_values)))
+    map = Map.put(map, "unix_timestamp_100us", single_quotes_to_integer(unix_timestamp_100us))
     map
   end
 
-  defp forecast(data) do
-    cond do
-      data[:temperature_sensor] < -2 && data[:light_sensor] < 128 && data[:atmo_pressure_sensor] < 720
-        -> "SNOW"
-      data[:temperature_sensor] < -2 && data[:light_sensor] > 128 && data[:atmo_pressure_sensor] < 680
-        -> "WET_SNOW"
-      data[:temperature_sensor] < -8
-        -> "SNOW"
-      data[:temperature_sensor] < -15 && data[:wind_speed_sensor] > 45
-        -> "BLIZZARD"
-      data[:temperature_sensor] > 0 && data[:atmo_pressure_sensor] < 710 && data[:humidity_sensor] > 70
-                                    && data[:wind_speed_sensor] < 20
-        -> "SLIGHT_RAIN"
-      data[:temperature_sensor] > 0 && data[:atmo_pressure_sensor] < 690 && data[:humidity_sensor] > 70
-                                    && data[:wind_speed_sensor] > 20
-        -> "HEAVY_RAIN"
-      data[:temperature_sensor] > 30 && data[:atmo_pressure_sensor] < 770 && data[:humidity_sensor] > 80
-                                    && data[:light_sensor] > 192
-        -> "HOT"
-      data[:temperature_sensor] > 30 && data[:atmo_pressure_sensor] < 770 && data[:humidity_sensor] > 50
-                                    && data[:light_sensor] > 192 && data[:wind_speed_sensor] > 35
-        -> "CONVECTION_OVEN"
-      data[:temperature_sensor] > 25 && data[:atmo_pressure_sensor] < 750 && data[:humidity_sensor] > 70
-                                    && data[:light_sensor] < 192 && data[:wind_speed_sensor] < 10
-        -> "CONVECTION_OVEN"
-      data[:temperature_sensor] > 25 && data[:atmo_pressure_sensor] < 750 && data[:humidity_sensor] > 70
-                                    && data[:light_sensor] < 192 && data[:wind_speed_sensor] > 10
-        -> "SLIGHT_BREEZE"
-      data[:light_sensor] < 128
-        -> "CLOUDY"
-      data[:temperature_sensor] > 30 && data[:atmo_pressure_sensor] < 660 && data[:humidity_sensor] > 85
-                                    && data[:wind_speed_sensor] > 45
-        -> "MONSOON"
-      true
-        -> "JUST_A_NORMAL_DAY"
+  defp get_xml_timestamp(xml) do
+    xml = parse(xml) |> xmlElement()
+    xml = Enum.at(xml, 6)
+    xml = Tuple.to_list(xml)
+    xml = List.last(xml)
+    xml = List.first(xml)
+    xml = Tuple.to_list(xml)
+    xml = Enum.at(xml, 8)
+    xml
+  end
+
+  defp single_quotes_to_float(num) do
+    num = to_string(num)
+    num = String.to_float(num)
+    num
+  end
+
+  defp single_quotes_to_integer(num) do
+    num = to_string(num)
+    num = String.to_integer(num)
+    num
+  end
+
+  defp calc_mean(data) do
+    map = %{}
+
+    timestamp = data["unix_timestamp_100us"]
+
+    filtered_data = Enum.filter(data, fn el_tuple ->
+      el_list = Tuple.to_list(el_tuple)
+      el_key = List.first(el_list)
+      el_last_key = String.at(el_key, -1)
+      el_last_key == "1" || el_last_key == "2"
+    end)
+
+    list_size = Enum.count(filtered_data)
+    final_map = if(list_size == 4) do
+      first_list = [Enum.at(filtered_data, 0), Enum.at(filtered_data, 1)]
+      second_list = [Enum.at(filtered_data, 2), Enum.at(filtered_data, 3)]
+
+      map = Enum.reduce(first_list, fn x, acc ->
+        mean_values(map, x, acc)
+      end)
+      map = Enum.reduce(second_list, fn x, acc ->
+        mean_values(map, x, acc)
+      end)
+      map
+    else
+      if(list_size == 2) do
+        Enum.reduce(filtered_data, fn x, acc ->
+          mean_values(map, x, acc)
+        end)
+      end
     end
+
+    final_map = Map.put(final_map, :unix_timestamp_100us, timestamp)
+    final_map
+  end
+
+  defp mean_values(map, x, acc) do
+    curr_value = Tuple.to_list(x)
+    prev_value = Tuple.to_list(acc)
+    v1 = List.last(curr_value)
+    v2 = List.last(prev_value)
+    k1 = List.first(curr_value)
+    key = String.slice(k1, 0..-3)
+    Map.put(map, String.to_atom(key), mean(v1, v2))
   end
 
   defp mean(a, b) do
