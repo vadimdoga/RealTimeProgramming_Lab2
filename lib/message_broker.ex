@@ -14,10 +14,27 @@ defmodule MessageBroker do
   end
 
   defp main(socket) do
-    IO.puts "recv"
+    #recv all messages
     recv = :gen_udp.recv(socket, 0)
-    IO.inspect recv
+    str = get_recv_data(recv)
+    _map = string_to_map(str)
+
     main(socket)
+  end
+
+  defp get_recv_data(recv) do
+    recv = Tuple.to_list(recv)
+    recv = List.last(recv)
+    recv = Tuple.to_list(recv)
+    str = List.last(recv)
+    str
+  end
+
+  defp string_to_map(str) do
+    str_list = String.split(str, ",")
+
+    map = Enum.chunk_every(str_list, 2) |> Enum.map(fn [a, b] -> {a, b} end) |> Map.new
+    map
   end
 
   @impl true
