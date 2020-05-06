@@ -6,6 +6,11 @@ defmodule Fetch do
   end
 
   def start_link(url_legacy_sensors, url_iot, url_sensors) do
+    spawn_link(__MODULE__, :start_application, [url_legacy_sensors, url_iot, url_sensors])
+    {:ok, self()}
+  end
+
+  def start_application(url_legacy_sensors, url_iot, url_sensors) do
     {:ok, _pid} = EventsourceEx.new(url_legacy_sensors, stream_to: self())
     {:ok, _pid} = EventsourceEx.new(url_iot, stream_to: self())
     {:ok, _pid} = EventsourceEx.new(url_sensors, stream_to: self())
@@ -15,18 +20,21 @@ defmodule Fetch do
     {:ok, aggregator_pid} = GenServer.start_link(Aggregator, [])
     {:ok, flow_aggr_pid} = GenServer.start_link(FlowAggr, [])
 
-    ets_create_insert(router_pid, flow_router_pid, aggregator_pid, flow_aggr_pid)
+    {:ok, socket} = :gen_udp.open(8680)
 
+
+    ets_create_insert(router_pid, flow_router_pid, aggregator_pid, flow_aggr_pid, socket)
     recv()
   end
   #create global variables with pids
-  defp ets_create_insert(router_pid, flow_router_pid, aggregator_pid, flow_aggr_pid) do
+  defp ets_create_insert(router_pid, flow_router_pid, aggregator_pid, flow_aggr_pid, socket) do
     :ets.new(:buckets_registry, [:named_table])
 
     :ets.insert(:buckets_registry, {"router_pid", router_pid})
     :ets.insert(:buckets_registry, {"flow_router_pid", flow_router_pid})
     :ets.insert(:buckets_registry, {"aggregator_pid", aggregator_pid})
     :ets.insert(:buckets_registry, {"flow_aggr_pid", flow_aggr_pid})
+    :ets.insert(:buckets_registry, {"socket", socket})
   end
   #wait for msg
   defp recv do

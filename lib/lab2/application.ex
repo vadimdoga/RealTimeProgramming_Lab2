@@ -24,6 +24,10 @@ defmodule Lab2.Application do
         }
       },
       %{
+        id: MessageBroker,
+        start: {MessageBroker, :start_link, []}
+      },
+      %{
         id: Router,
         start: {Router, :start_link, []}
       },
@@ -39,6 +43,7 @@ defmodule Lab2.Application do
         id: FlowAggr,
         start: {FlowAggr, :start_link, []}
       }
+
     ]
 
     opts = [strategy: :one_for_one, name: __MODULE__]

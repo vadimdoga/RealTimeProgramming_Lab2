@@ -8,19 +8,54 @@ defmodule Slave do
   end
 
   #Callbacks
+  @impl true
   def init(msg) do
     perform_calc(msg)
-    {:ok, self()}
+
+    {:ok, %{}}
   end
 
+  @impl true
   def handle_cast({:rtl, msg}, state) do
     try do
       perform_calc(msg)
     rescue
       _ -> :ok
     end
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:udp_send, data}, state) do
+    [{_id, socket}] = :ets.lookup(:buckets_registry, "socket")
+    #add it's topic to each map
+    data = classify_map(data)
+    #publish data to msg broker
+    publish(data, socket)
 
     {:noreply, state}
+  end
+
+  defp publish(data, socket) do
+    #convert map to string
+    data = Map.keys(data)
+    |> Enum.map(fn key -> "#{key},#{data[key]}" end)
+    |> Enum.join(",")
+
+    :gen_udp.send(socket, {127,0,0,1}, 8679, data)
+  end
+
+  defp classify_map(map) do
+    check_iot = Map.has_key?(map, :atmo_pressure_sensor)
+    check_legacy_sensors = Map.has_key?(map, :humidity_sensor)
+    check_sensors = Map.has_key?(map, :light_sensor)
+
+    map = cond do
+      check_iot == true -> Map.put(map, :topic, "iot")
+      check_legacy_sensors == true -> Map.put(map, :topic, "legacy_sensors")
+      check_sensors == true -> Map.put(map, :topic, "sensors")
+    end
+    map
   end
 
   ## Private
@@ -33,7 +68,9 @@ defmodule Slave do
       xml_parse(data)
     end
     data = calc_mean(parsed_data)
-    IO.inspect(data)
+    # IO.inspect data
+    GenServer.cast(self(), {:udp_send, data})
+    # IO.inspect(self())
   end
 
   defp via_tuple(name) do
