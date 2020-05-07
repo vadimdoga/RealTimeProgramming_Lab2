@@ -24,13 +24,4 @@ defmodule SubscriptionManager do
     Agent.get_and_update(agent, fn x -> Map.pop(x, key) end)
   end
 
-  #client
-  def subscribe(server, name, pid) do
-    put(server, name, pid)
-  end
-
-  def unsubscribe(server, name) do
-    delete(server, name)
-  end
-
 end

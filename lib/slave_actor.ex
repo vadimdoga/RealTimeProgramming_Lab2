@@ -27,37 +27,28 @@ defmodule Slave do
 
   @impl true
   def handle_cast({:udp_send, data}, state) do
-    socket = :global.whereis_name('socket')
-
     #add it's topic to each map
-    data = classify_map(data)
+    topic = classify_map(data)
+    publisher_pid = :global.whereis_name('publisher_pid')
+
     #publish data to msg broker
-    Publisher.start()
-    Publisher.publish(data)
+    # Publisher.publish(data, topic)
+    GenServer.cast(publisher_pid, {:publish, [data, topic]})
 
     {:noreply, state}
   end
-
-  # defp publish(data, socket) do
-  #   #convert map to string
-  #   data = Map.keys(data)
-  #   |> Enum.map(fn key -> "#{key},#{data[key]}" end)
-  #   |> Enum.join(",")
-
-  #   :gen_udp.send(socket, {127,0,0,1}, 8679, data)
-  # end
 
   defp classify_map(map) do
     check_iot = Map.has_key?(map, :atmo_pressure_sensor)
     check_legacy_sensors = Map.has_key?(map, :humidity_sensor)
     check_sensors = Map.has_key?(map, :light_sensor)
 
-    map = cond do
-      check_iot == true -> Map.put(map, :topic, "iot")
-      check_legacy_sensors == true -> Map.put(map, :topic, "legacy_sensors")
-      check_sensors == true -> Map.put(map, :topic, "sensors")
+    topic = cond do
+      check_iot == true -> :iot
+      check_legacy_sensors == true -> :legacy_sensors
+      check_sensors == true -> :sensors
     end
-    map
+    topic
   end
 
   ## Private

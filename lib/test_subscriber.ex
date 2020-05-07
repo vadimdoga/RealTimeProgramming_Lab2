@@ -7,13 +7,8 @@ defmodule TestSubscriber do
 
   @impl true
   def init(init_arg) do
-    {:ok, subscriber} = Subscriber.start_link()
-    SubscriptionManager.subscribe(server, name, pid)
-    # manager = :global.whereis_name('manager')
-    # Publisher.subscribe(manager, 'subs_node2', subscriber)
-
-
-    # spawn_link(__MODULE__, :main, [manager, subscriber])
+    {:ok, subscriber_pid} = GenServer.start_link(Subscriber, [])
+    GenServer.cast(subscriber_pid, {:subscribe, :iot})
 
     {:ok, init_arg}
   end

@@ -19,7 +19,10 @@ defmodule MessageBroker do
     recv = :gen_udp.recv(socket, 0)
     str = get_recv_data(recv)
     map = string_to_map(str)
-    IO.inspect(map)
+    topic = map["topic"]
+
+    Publisher.notify(str, topic)
+
     # manager = :global.whereis_name('manager')
     # Publisher.notify(manager, "Hello !!")
     main(socket)
