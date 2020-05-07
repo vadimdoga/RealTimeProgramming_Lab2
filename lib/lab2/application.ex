@@ -42,11 +42,17 @@ defmodule Lab2.Application do
       %{
         id: FlowAggr,
         start: {FlowAggr, :start_link, []}
+      },
+      %{
+        id: TestSubscriber,
+        start: {TestSubscriber, :start_link, []}
       }
 
     ]
 
     opts = [strategy: :one_for_one, name: __MODULE__]
     Supervisor.start_link(children, opts)
+    receive do
+    end
   end
 end

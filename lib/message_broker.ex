@@ -9,16 +9,19 @@ defmodule MessageBroker do
   def init(init_arg) do
     {:ok, socket} = :gen_udp.open(8679, [:binary, {:active, false}])
 
-    main(socket)
+    spawn_link(__MODULE__, :main, [socket])
+
     {:ok, init_arg}
   end
 
-  defp main(socket) do
+  def main(socket) do
     #recv all messages
     recv = :gen_udp.recv(socket, 0)
     str = get_recv_data(recv)
-    _map = string_to_map(str)
-
+    map = string_to_map(str)
+    IO.inspect(map)
+    # manager = :global.whereis_name('manager')
+    # Publisher.notify(manager, "Hello !!")
     main(socket)
   end
 
@@ -37,10 +40,4 @@ defmodule MessageBroker do
     map
   end
 
-  @impl true
-  def handle_cast({:name, _args}, state) do
-
-
-    {:noreply, state}
-  end
 end

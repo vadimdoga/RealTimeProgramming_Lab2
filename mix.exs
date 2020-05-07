@@ -24,7 +24,8 @@ defmodule Lab2.MixProject do
     [
       {:eventsource_ex, "~> 0.0.2"},
       {:jason, "~> 1.1"},
-      {:sweet_xml, "~> 0.6.5"}
+      {:sweet_xml, "~> 0.6.5"},
+      {:pubsub, "~> 1.0"}
     ]
   end
 end

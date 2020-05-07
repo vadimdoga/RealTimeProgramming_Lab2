@@ -27,23 +27,25 @@ defmodule Slave do
 
   @impl true
   def handle_cast({:udp_send, data}, state) do
-    [{_id, socket}] = :ets.lookup(:buckets_registry, "socket")
+    socket = :global.whereis_name('socket')
+
     #add it's topic to each map
     data = classify_map(data)
     #publish data to msg broker
-    publish(data, socket)
+    Publisher.start()
+    Publisher.publish(data)
 
     {:noreply, state}
   end
 
-  defp publish(data, socket) do
-    #convert map to string
-    data = Map.keys(data)
-    |> Enum.map(fn key -> "#{key},#{data[key]}" end)
-    |> Enum.join(",")
+  # defp publish(data, socket) do
+  #   #convert map to string
+  #   data = Map.keys(data)
+  #   |> Enum.map(fn key -> "#{key},#{data[key]}" end)
+  #   |> Enum.join(",")
 
-    :gen_udp.send(socket, {127,0,0,1}, 8679, data)
-  end
+  #   :gen_udp.send(socket, {127,0,0,1}, 8679, data)
+  # end
 
   defp classify_map(map) do
     check_iot = Map.has_key?(map, :atmo_pressure_sensor)
