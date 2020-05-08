@@ -44,8 +44,8 @@ defmodule Lab2.Application do
         start: {FlowAggr, :start_link, []}
       },
       %{
-        id: TestSubscriber,
-        start: {TestSubscriber, :start_link, []}
+        id: JoinSensors,
+        start: {JoinSensors, :start_link, []}
       }
 
     ]

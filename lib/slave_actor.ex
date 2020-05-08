@@ -61,9 +61,8 @@ defmodule Slave do
       xml_parse(data)
     end
     data = calc_mean(parsed_data)
-    # IO.inspect data
+
     GenServer.cast(self(), {:udp_send, data})
-    # IO.inspect(self())
   end
 
   defp via_tuple(name) do

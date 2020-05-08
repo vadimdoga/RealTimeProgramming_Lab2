@@ -18,13 +18,19 @@ defmodule MessageBroker do
     #recv all messages
     recv = :gen_udp.recv(socket, 0)
     str = get_recv_data(recv)
-    map = string_to_map(str)
+    map = convert_string_to_map(str)
     topic = map["topic"]
+    map = Map.delete(map, "topic")
+    str = convert_map_to_string(map)
 
-    Publisher.notify(str, topic)
+    cond do
+      topic == "iot" -> Publisher.notify(str, "join")
+      topic == "legacy_sensors" -> Publisher.notify(str, "join")
+      topic == "sensors" -> Publisher.notify(str, "join")
+      true -> Publisher.notify(str, topic)
+    end
 
-    # manager = :global.whereis_name('manager')
-    # Publisher.notify(manager, "Hello !!")
+
     main(socket)
   end
 
@@ -36,7 +42,13 @@ defmodule MessageBroker do
     str
   end
 
-  defp string_to_map(str) do
+  defp convert_map_to_string(message) do
+    Map.keys(message)
+    |> Enum.map(fn key -> "#{key},#{message[key]}" end)
+    |> Enum.join(",")
+  end
+
+  defp convert_string_to_map(str) do
     str_list = String.split(str, ",")
 
     map = Enum.chunk_every(str_list, 2) |> Enum.map(fn [a, b] -> {a, b} end) |> Map.new

@@ -18,7 +18,6 @@ defmodule FlowRouter do
   def handle_cast(:to_flow, state) do
     start_time = state[:start_time]
     index = state[:index]
-
     time = Time.utc_now()
     diff_time = Time.diff(time, start_time, :millisecond)
 

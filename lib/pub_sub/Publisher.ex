@@ -33,13 +33,17 @@ defmodule Publisher do
       message = Map.put(message, :topic, topic)
 
       #convert map to string
-      message = Map.keys(message)
-      |> Enum.map(fn key -> "#{key},#{message[key]}" end)
-      |> Enum.join(",")
+      message = convert_map_to_string(message)
 
       :gen_udp.send(publisher_socket, {127,0,0,1}, 8679, message)
 
       {:noreply, state}
+    end
+
+    defp convert_map_to_string(message) do
+      Map.keys(message)
+      |> Enum.map(fn key -> "#{key},#{message[key]}" end)
+      |> Enum.join(",")
     end
 
   end
