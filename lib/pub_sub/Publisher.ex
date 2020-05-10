@@ -16,10 +16,11 @@ defmodule Publisher do
       subscription_manager = :global.whereis_name('subscription_manager')
       [{_id, notify_socket}] = :ets.lookup(:buckets_registry, "notify_socket")
 
+      message = Jason.encode!(message)
 
       SubscriptionManager.get_all(subscription_manager) |>
       Enum.map(fn {key, value} ->
-        if value == String.to_atom(topic) do
+        if value == topic do
           :gen_udp.send(notify_socket, {127,0,0,1}, key , message)
         end
       end)
@@ -30,20 +31,12 @@ defmodule Publisher do
       [{_id, publisher_socket}] = :ets.lookup(:buckets_registry, "publisher_socket")
 
       #add topic to map
-      message = Map.put(message, :topic, topic)
+      message = Map.put(message, "topic", topic)
 
-      #convert map to string
-      message = convert_map_to_string(message)
+      message = Jason.encode!(message)
 
       :gen_udp.send(publisher_socket, {127,0,0,1}, 8679, message)
 
       {:noreply, state}
     end
-
-    defp convert_map_to_string(message) do
-      Map.keys(message)
-      |> Enum.map(fn key -> "#{key},#{message[key]}" end)
-      |> Enum.join(",")
-    end
-
   end

@@ -17,19 +17,17 @@ defmodule MessageBroker do
   def main(socket) do
     #recv all messages
     recv = :gen_udp.recv(socket, 0)
-    str = get_recv_data(recv)
-    map = convert_string_to_map(str)
+    json = get_recv_data(recv)
+    map = Jason.decode!(json)
     topic = map["topic"]
     map = Map.delete(map, "topic")
-    str = convert_map_to_string(map)
 
     cond do
-      topic == "iot" -> Publisher.notify(str, "join")
-      topic == "legacy_sensors" -> Publisher.notify(str, "join")
-      topic == "sensors" -> Publisher.notify(str, "join")
-      true -> Publisher.notify(str, topic)
+      topic == "iot" -> Publisher.notify(map, "join")
+      topic == "legacy_sensors" -> Publisher.notify(map, "join")
+      topic == "sensors" -> Publisher.notify(map, "join")
+      true -> Publisher.notify(map, topic)
     end
-
 
     main(socket)
   end
@@ -41,18 +39,4 @@ defmodule MessageBroker do
     str = List.last(recv)
     str
   end
-
-  defp convert_map_to_string(message) do
-    Map.keys(message)
-    |> Enum.map(fn key -> "#{key},#{message[key]}" end)
-    |> Enum.join(",")
-  end
-
-  defp convert_string_to_map(str) do
-    str_list = String.split(str, ",")
-
-    map = Enum.chunk_every(str_list, 2) |> Enum.map(fn [a, b] -> {a, b} end) |> Map.new
-    map
-  end
-
 end

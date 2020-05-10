@@ -46,6 +46,10 @@ defmodule Lab2.Application do
       %{
         id: JoinSensors,
         start: {JoinSensors, :start_link, []}
+      },
+      %{
+        id: Forecast,
+        start: {Forecast, :start_link, []}
       }
 
     ]

@@ -32,7 +32,6 @@ defmodule Slave do
     publisher_pid = :global.whereis_name('publisher_pid')
 
     #publish data to msg broker
-    # Publisher.publish(data, topic)
     GenServer.cast(publisher_pid, {:publish, [data, topic]})
 
     {:noreply, state}
@@ -44,9 +43,9 @@ defmodule Slave do
     check_sensors = Map.has_key?(map, :light_sensor)
 
     topic = cond do
-      check_iot == true -> :iot
-      check_legacy_sensors == true -> :legacy_sensors
-      check_sensors == true -> :sensors
+      check_iot == true -> "iot"
+      check_legacy_sensors == true -> "legacy_sensors"
+      check_sensors == true -> "sensors"
     end
     topic
   end

@@ -8,7 +8,7 @@ defmodule JoinSensors do
   @impl true
   def init(init_arg) do
     port = 8681
-    topic = :join
+    topic = "join"
     list_iot = []
     list_sensors = []
     list_legacy_sensors = []
@@ -28,19 +28,17 @@ defmodule JoinSensors do
     joined_list = []
 
     recv = :gen_udp.recv(subscriber_socket, 0)
-    recv = get_recv_data(recv)
-    map = convert_string_to_map(recv)
-    # IO.puts "Received from topic - #{topic}"
-    # IO.inspect map
+    json = get_recv_data(recv)
+    map = Jason.decode!(json)
+
     topic = classify_map(map)
     {list_iot, list_sensors, list_legacy_sensors} = add_to_list(list_iot, list_sensors, list_legacy_sensors, topic, map)
 
-    {joined_list, list_iot, list_legacy_sensors, list_sensors} = if Enum.count(list_iot) > 1 && Enum.count(list_sensors) > 1 && Enum.count(list_legacy_sensors) > 1 do
-      join_sensors(list_iot, list_legacy_sensors, list_sensors)
+    {joined_list, list_iot, list_legacy_sensors, list_sensors} = if Enum.count(list_iot) > 1 do
+      join_sensors(joined_list, list_iot, list_legacy_sensors, list_sensors)
     else
       {joined_list, list_iot, list_legacy_sensors, list_sensors}
     end
-
     if joined_list != [] do
       publish_list(joined_list)
     end
@@ -49,7 +47,7 @@ defmodule JoinSensors do
   end
 
   defp publish_list(joined_list) do
-    topic = :forecast
+    topic = "forecast"
     publisher_pid = :global.whereis_name('publisher_pid')
 
     Enum.map(joined_list, fn joined_map ->
@@ -58,19 +56,19 @@ defmodule JoinSensors do
   end
 
   defp add_to_list(list_iot, list_sensors, list_legacy_sensors, topic, map) do
-    list_iot = if topic == :iot do
+    list_iot = if topic == "iot" do
       [map | list_iot]
     else
       list_iot
     end
 
-    list_sensors = if topic == :sensors do
+    list_sensors = if topic == "sensors" do
       [map | list_sensors]
     else
       list_sensors
     end
 
-    list_legacy_sensors = if topic == :legacy_sensors do
+    list_legacy_sensors = if topic == "legacy_sensors" do
       [map | list_legacy_sensors]
     else
       list_legacy_sensors
@@ -79,60 +77,53 @@ defmodule JoinSensors do
     {list_iot, list_sensors, list_legacy_sensors}
   end
 
-  defp join_sensors(list_iot, list_legacy_sensors, list_sensors) do
-    joined_msg = Enum.map(list_iot, fn iot_msg ->
-      iot_timestamp = iot_msg[:unix_timestamp_100us] |> String.to_integer()
+  defp join_sensors(joined_list, list_iot, list_legacy_sensors, list_sensors) do
+    joined_list = Enum.map(list_iot, fn iot_msg ->
+      iot_timestamp = iot_msg["unix_timestamp_100us"]
 
       sensors_msg = Enum.find(list_sensors, fn sensors_msg ->
-        sensors_timestamp = sensors_msg[:unix_timestamp_100us] |> String.to_integer()
+        sensors_timestamp = sensors_msg["unix_timestamp_100us"]
         (iot_timestamp - sensors_timestamp <= 100) &&
         (iot_timestamp - sensors_timestamp >= -100)
       end)
 
       legacy_sensors_msg = Enum.find(list_legacy_sensors, fn legacy_sensors_msg ->
-        legacy_sensors_timestamp = legacy_sensors_msg[:unix_timestamp_100us] |> String.to_integer()
+        legacy_sensors_timestamp = legacy_sensors_msg["unix_timestamp_100us"]
         (iot_timestamp - legacy_sensors_timestamp <= 100) &&
         (iot_timestamp - legacy_sensors_timestamp >= -100)
       end)
 
       if sensors_msg != nil && legacy_sensors_msg != nil do
         %{
-          atmo_pressure_sensor: iot_msg[:atmo_pressure_sensor],
-          wind_speed_sensor: iot_msg[:wind_speed_sensor],
-          humidity_sensor: legacy_sensors_msg[:humidity_sensor],
-          temperature_sensor: legacy_sensors_msg[:temperature_sensor],
-          light_sensor: sensors_msg[:light_sensor],
-          unix_timestamp_100us: iot_msg[:unix_timestamp_100us]
+          "atmo_pressure_sensor" => iot_msg["atmo_pressure_sensor"],
+          "wind_speed_sensor" => iot_msg["wind_speed_sensor"],
+          "humidity_sensor" => legacy_sensors_msg["humidity_sensor"],
+          "temperature_sensor" => legacy_sensors_msg["temperature_sensor"],
+          "light_sensor" => sensors_msg["light_sensor"],
+          "unix_timestamp_100us" => iot_msg["unix_timestamp_100us"]
         }
       end
     end)
 
     #filter the nils
-    joined_msg = Enum.filter(joined_msg, fn x ->
+    joined_list = Enum.filter(joined_list, fn x ->
       if x != nil do
         x
       end
     end)
 
-    {joined_msg, list_iot, list_legacy_sensors, list_sensors}
-  end
-
-  defp convert_string_to_map(str) do
-    str_list = String.split(str, ",")
-
-    map = Enum.chunk_every(str_list, 2) |> Enum.map(fn [a, b] -> {String.to_atom(a), b} end) |> Map.new
-    map
+    {joined_list, [], [], []}
   end
 
   defp classify_map(map) do
-    check_iot = Map.has_key?(map, :atmo_pressure_sensor)
-    check_legacy_sensors = Map.has_key?(map, :humidity_sensor)
-    check_sensors = Map.has_key?(map, :light_sensor)
+    check_iot = Map.has_key?(map, "atmo_pressure_sensor")
+    check_legacy_sensors = Map.has_key?(map, "humidity_sensor")
+    check_sensors = Map.has_key?(map, "light_sensor")
 
     topic = cond do
-      check_iot == true -> :iot
-      check_legacy_sensors == true -> :legacy_sensors
-      check_sensors == true -> :sensors
+      check_iot == true -> "iot"
+      check_legacy_sensors == true -> "legacy_sensors"
+      check_sensors == true -> "sensors"
     end
     topic
   end
