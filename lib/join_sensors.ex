@@ -35,19 +35,18 @@ defmodule JoinSensors do
     {list_iot, list_sensors, list_legacy_sensors} = add_to_list(list_iot, list_sensors, list_legacy_sensors, topic, map)
 
     {joined_list, list_iot, list_legacy_sensors, list_sensors} = if Enum.count(list_iot) > 1 do
-      join_sensors(joined_list, list_iot, list_legacy_sensors, list_sensors)
+      join_sensors(list_iot, list_legacy_sensors, list_sensors)
     else
       {joined_list, list_iot, list_legacy_sensors, list_sensors}
     end
     if joined_list != [] do
-      publish_list(joined_list)
+      publish_list(joined_list, "forecast")
     end
 
     recv_from_subscription(subscriber_socket, list_iot, list_sensors, list_legacy_sensors)
   end
 
-  defp publish_list(joined_list) do
-    topic = "forecast"
+  defp publish_list(joined_list, topic) do
     publisher_pid = :global.whereis_name('publisher_pid')
 
     Enum.map(joined_list, fn joined_map ->
@@ -77,7 +76,7 @@ defmodule JoinSensors do
     {list_iot, list_sensors, list_legacy_sensors}
   end
 
-  defp join_sensors(joined_list, list_iot, list_legacy_sensors, list_sensors) do
+  defp join_sensors(list_iot, list_legacy_sensors, list_sensors) do
     joined_list = Enum.map(list_iot, fn iot_msg ->
       iot_timestamp = iot_msg["unix_timestamp_100us"]
 
