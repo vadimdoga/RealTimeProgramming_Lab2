@@ -53,7 +53,6 @@ defmodule JoinSensors do
     publisher_pid = :global.whereis_name('publisher_pid')
 
     Enum.map(joined_list, fn joined_map ->
-      IO.inspect joined_map
       GenServer.cast(publisher_pid, {:publish, [joined_map, topic]})
     end)
   end
