@@ -1,6 +1,13 @@
 defmodule Fetch do
   use GenServer
 
+    # PORTS:
+    # 8679 - Message Broker
+    # 8680 - Publisher
+    # 8681 - Join Subscriber
+    # 8682 - Notify subscribers
+    # 8683 - Forecast Subscriber
+
   def init(init_arg) do
     {:ok, init_arg}
   end
@@ -12,7 +19,6 @@ defmodule Fetch do
 
   def start_application(url_legacy_sensors, url_iot, url_sensors) do
     {:ok, publisher_socket} = :gen_udp.open(8680)
-
     {:ok, notify_socket} = :gen_udp.open(8682)
 
     {:ok, subscription_manager} = SubscriptionManager.start
