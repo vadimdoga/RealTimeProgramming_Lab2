@@ -7,6 +7,7 @@ defmodule Fetch do
     # 8681 - Join Subscriber
     # 8682 - Notify subscribers
     # 8683 - Forecast Subscriber
+    # 8684 - Aggregator Subscriber
 
   def init(init_arg) do
     {:ok, init_arg}
@@ -31,7 +32,8 @@ defmodule Fetch do
     #generate pids for actors
     {:ok, router_pid} = GenServer.start_link(Router, [])
     {:ok, flow_router_pid} = GenServer.start_link(FlowRouter, [])
-    {:ok, aggregator_pid} = GenServer.start_link(Aggregator, [])
+    # {:ok, aggregator_pid} = GenServer.start_link(Aggregator, [])
+    aggregator_pid = ""
     {:ok, flow_aggr_pid} = GenServer.start_link(FlowAggr, [])
     {:ok, publisher_pid} = GenServer.start_link(Publisher, [])
 
