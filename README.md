@@ -52,8 +52,7 @@ The basic requirements are:
 
 ## Start the project
 ```
-docker pull alexburlacu/rtp-server
-docker pull vadimdoga/elix-lab
+docker pull alexburlacu/rtp-server:lab2
 docker run -p 4000:4000 rtp-server_img
-docker run --network host -e RATE=5000 -t elix-lab
+mix run
 ```
