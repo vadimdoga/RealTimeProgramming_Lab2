@@ -10,6 +10,7 @@ defmodule Publisher do
     @impl true
     def init(_init_arg) do
       {:ok, socket} = :gen_tcp.connect('localhost', 1883, [:binary, active: false, packet: :raw])
+
       Logger.info("Connecting to mosquitto")
       connect(socket)
 
@@ -25,7 +26,7 @@ defmodule Publisher do
       SubscriptionManager.get_all(subscription_manager) |>
       Enum.map(fn {key, value} ->
         if value == topic do
-          :gen_udp.send(notify_socket, {127,0,0,1}, key , message)
+          :gen_udp.send(notify_socket, 'localhost', key , message)
         end
       end)
     end
@@ -39,7 +40,7 @@ defmodule Publisher do
 
       message = Jason.encode!(message)
 
-      :gen_udp.send(publisher_socket, {127,0,0,1}, 8679, message)
+      :gen_udp.send(publisher_socket, 'localhost', 8679, message)
 
       {:noreply, state}
     end

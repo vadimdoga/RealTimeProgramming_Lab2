@@ -17,9 +17,9 @@ defmodule Lab2.Application do
         id: Fetch,
         start: {
           Fetch, :start_link, [
-            "http://localhost:4000/legacy_sensors",
-            "http://localhost:4000/iot",
-            "http://localhost:4000/sensors"
+            "http://host.docker.internal:4000/legacy_sensors",
+            "http://host.docker.internal:4000/iot",
+            "http://host.docker.internal:4000/sensors"
           ]
         }
       },

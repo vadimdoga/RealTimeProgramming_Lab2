@@ -1,0 +1,10 @@
+version: '3'
+services:
+    sse_server:
+        image: alexburlacu/rtp-server:lab2
+        container_name: SSE
+        ports:  [4000:4000]
+
+    lab:
+        build: .
+        container_name: elix-lab-2
