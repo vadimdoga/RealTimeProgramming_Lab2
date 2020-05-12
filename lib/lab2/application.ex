@@ -50,6 +50,10 @@ defmodule Lab2.Application do
       %{
         id: Forecast,
         start: {Forecast, :start_link, []}
+      },
+      %{
+        id: MqttAdapter,
+        start: {MqttAdapter, :start_link, []}
       }
 
     ]
