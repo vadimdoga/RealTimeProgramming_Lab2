@@ -42,10 +42,13 @@ The basic requirements are:
 
 ## Output
 1. Pretty Printing
+![frc](https://user-images.githubusercontent.com/43139007/81674003-33c68280-9455-11ea-8ef5-614ee8a0c710.png)
 
 2. Logger info 
+![logger](https://user-images.githubusercontent.com/43139007/81674002-332dec00-9455-11ea-8cf4-ac8e8417d117.png)
 
 3. MQTT Subscriber
+![mqtt](https://user-images.githubusercontent.com/43139007/81673998-31fcbf00-9455-11ea-92e7-ab997e6898e7.png)
 
 ## Start the project
 ```
