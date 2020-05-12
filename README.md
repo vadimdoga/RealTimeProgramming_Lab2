@@ -6,13 +6,27 @@ You will have to make a publisher-subscriber system, with a message broker and s
 
 Step 1 - Use the first lab for publishers, with some minor tweaking.
 
-Step 2 - Same as last time, docker pull alexburlacu/rtp-server:lab2 and launch it (note the :lab2 part, don't forget it), then forward the port 4000. But now you have 2 more routes beside the /iot, these are /sensors and /legacy_sensors. Oh, and the measurements are sharded, that is not all 10 duplicated sensors are on the same route. You will have to join them, but more on that later. Also, messages on the routes have different formats. Two of these output JSONs, one XMLs.
+Step 2 - Same as last time, docker pull alexburlacu/rtp-server:lab2 and launch it (note the :lab2 part, don't forget it), 
+then forward the port 4000. But now you have 2 more routes beside the /iot, these are /sensors and /legacy_sensors. 
+Oh, and the measurements are sharded, that is not all 10 duplicated sensors are on the same route. 
+You will have to join them, but more on that later. Also, messages on the routes have different formats. 
+Two of these output JSONs, one XMLs.
 
-Stage 2.1 - Note that due to a sharded representation, your worker actors can no longer compute the weather forecast. But they can still parse the data and compute the mean between duplicate sensors. And of course crash in case of the PANIC message. Just downscale a bit the number of workers, for you will, as an option, run 3 instances of the same program, with only different parsers and reading from different routes. Even better, make them be publishers, for an additional point.
+Stage 2.1 - Note that due to a sharded representation, your worker actors can no longer compute the weather forecast. 
+But they can still parse the data and compute the mean between duplicate sensors. And of course crash in case of the PANIC message. 
+Just downscale a bit the number of workers, for you will, as an option, run 3 instances of the same program, 
+with only different parsers and reading from different routes. Even better, make them be publishers, for an additional point.
 
-Step 3 - Design and implement your own Message Broker. Usage of existing solutions, like RabbitMQ or something else, is prohibited. As a minimum, it must support multiple topics, the possibility to unsubscribe and subscribe dynamically. So no hardcoded publishers and subscribers. Also, keep in mind, a Message Broker is a separate entity that requires some transport protocol to communicate with. I suggest UDP. But if you want to use TCP, that's fine.
+Step 3 - Design and implement your own Message Broker. Usage of existing solutions, like RabbitMQ or something else, is prohibited. 
+As a minimum, it must support multiple topics, the possibility to unsubscribe and subscribe dynamically. 
+So no hardcoded publishers and subscribers. Also, keep in mind, a Message Broker is a separate entity that requires some transport protocol to communicate with. I suggest UDP. But if you want to use TCP, that's fine.
 
-Stage 4 - Now you need Subscribers. For this laboratory, you will need at least 3. One is already 3/4 done: pretty print the measurements, or if you have it, run the dashboard from the previous lab. The next one is 1/4 done: the forecast generator. You should by now have the rule engine for making forecasts, and the aggregator. But now you will also have to do a streaming join, by timestamp. Once the join is done, you can either publish back on a separate topic for another subscriber to compute the windowed forecast or do it on the same subscriber. Although, the former approach is recommended. Finally, the 3rd mandatory subscriber will have to be an adapter to MQTT protocol. That is, the data that you read will be then passed on in compliance with the MQTT protocol. Here, republishing joined data could be useful, so as to transmit only readings from a single "virtual" sensor.
+Stage 4 - Now you need Subscribers. For this laboratory, you will need at least 3. One is already 3/4 done: pretty print the measurements, or if you have it, run the dashboard from the previous lab. The next one is 1/4 done: the forecast generator. 
+You should by now have the rule engine for making forecasts, and the aggregator. 
+But now you will also have to do a streaming join, by timestamp. Once the join is done, you can either publish back on a separate topic for another subscriber to compute the windowed forecast or do it on the same subscriber. 
+Although, the former approach is recommended. Finally, the 3rd mandatory subscriber will have to be an adapter to MQTT protocol. 
+That is, the data that you read will be then passed on in compliance with the MQTT protocol. 
+Here, republishing joined data could be useful, so as to transmit only readings from a single "virtual" sensor.
 
 The basic requirements are:
 - Process events as soon as they come
