@@ -54,5 +54,5 @@ The basic requirements are:
 ```
 docker pull alexburlacu/rtp-server:lab2
 docker run -p 4000:4000 rtp-server_img
-mix run
+RATE=1000 mix run
 ```
