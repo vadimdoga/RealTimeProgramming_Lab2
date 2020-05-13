@@ -9,11 +9,15 @@ defmodule Publisher do
 
     @impl true
     def init(_init_arg) do
-      {:ok, socket} = :gen_tcp.connect('localhost', 1883, [:binary, active: false, packet: :raw])
-      Logger.info("Connecting to mosquitto")
-      connect(socket)
+      {state, socket} = :gen_tcp.connect('localhost', 1883, [:binary, active: false, packet: :raw])
+      if state == :ok do
+        connect(socket)
+        Logger.info("Connecting to mosquitto")
+      else
+        Logger.info("Mosquitto broker not connected")
+      end
 
-      {:ok, %{socket: socket}}
+      {:ok, %{socket: socket, mosquitto_state: state}}
     end
 
     def notify(message, topic) do
@@ -33,7 +37,6 @@ defmodule Publisher do
     @impl true
     def handle_cast({:publish, [message, topic]}, state) do
       [{_id, publisher_socket}] = :ets.lookup(:buckets_registry, "publisher_socket")
-
       #add topic to map
       message = Map.put(message, "topic", topic)
 
@@ -47,9 +50,12 @@ defmodule Publisher do
     @impl true
     def handle_cast({:publish_as_packet, [message, topic]}, state) do
       socket = state.socket
-      message = Jason.encode!(message)
+      mosquitto_state = state.mosquitto_state
+      if mosquitto_state == :ok do
+        message = Jason.encode!(message)
 
-      publish(socket, topic, message)
+        publish(socket, topic, message)
+      end
 
       {:noreply, state}
     end
